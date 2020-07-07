@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.10.2)
 
 set(Darknet_MAJOR_VERSION 0)
 set(Darknet_MINOR_VERSION 2)
