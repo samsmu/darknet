@@ -1265,6 +1265,23 @@ extern "C" void softmax_x_ent_gpu(int n, float *pred, float *truth, float *delta
     CHECK_CUDA(cudaPeekAtLastError());
 }
 
+__global__ void logistic_x_ent_kernel(int n, float *pred, float *truth, float *delta, float *error)
+{
+    int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    if (i < n) {
+        float p = pred[i];
+        float t = truth[i];
+        error[i] = -t * log(p + .0000001) - (1 - t)*log(1 - p + .0000001);
+        delta[i] = t - p;
+    }
+}
+
+extern "C" void logistic_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error)
+{
+    logistic_x_ent_kernel << <cuda_gridsize(n), BLOCK >> > (n, pred, truth, delta, error);
+    check_error(cudaPeekAtLastError());
+}
+
 __global__ void l2_kernel(int n, float *pred, float *truth, float *delta, float *error)
 {
     int i = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;

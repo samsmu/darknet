@@ -298,6 +298,12 @@ __global__ void activate_array_gelu_kernel(float *x, int n)
     }
 }
 
+extern "C" void activate_array_gpu(float *x, int n, ACTIVATION a)
+{
+    activate_array_kernel << <cuda_gridsize(n), BLOCK >> > (x, n, a);
+    check_error(cudaPeekAtLastError());
+}
+
 __global__ void activate_array_logistic_kernel(float *x, int n)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;

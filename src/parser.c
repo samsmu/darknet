@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "activation_layer.h"
+#include "logistic_layer.h"
 #include "activations.h"
 #include "assert.h"
 #include "avgpool_layer.h"
@@ -63,6 +64,7 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[conv]")==0
             || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
     if (strcmp(type, "[activation]")==0) return ACTIVE;
+    if (strcmp(type, "[logistic]") == 0) return LOGXENT;
     if (strcmp(type, "[net]")==0
             || strcmp(type, "[network]")==0) return NETWORK;
     if (strcmp(type, "[crnn]")==0) return CRNN;
@@ -983,6 +985,14 @@ layer parse_sam(list *options, size_params params, network net)
     return s;
 }
 
+layer parse_logistic(list *options, size_params params)
+{
+    layer l = make_logistic_layer(params.batch, params.inputs);
+    l.h = l.out_h = params.h;
+    l.w = l.out_w = params.w;
+    l.c = l.out_c = params.c;
+    return l;
+}
 
 layer parse_activation(list *options, size_params params)
 {
@@ -1329,6 +1339,8 @@ network parse_network_cfg_custom(char *filename, int batch, int time_steps)
             l = parse_local(options, params);
         }else if(lt == ACTIVE){
             l = parse_activation(options, params);
+        }else if (lt == LOGXENT) {
+            l = parse_logistic(options, params);
         }else if(lt == RNN){
             l = parse_rnn(options, params);
         }else if(lt == GRU){

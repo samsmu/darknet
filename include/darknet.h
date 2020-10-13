@@ -421,6 +421,8 @@ struct layer {
     int delta_pinned;
     int output_pinned;
     float * loss;
+    float * loss_temp; //u_net code
+    float * loss_temp1; //u_net code
     float * squared;
     float * norms;
 
@@ -610,6 +612,8 @@ struct layer {
     float * output_avg_gpu;
     float * activation_input_gpu;
     float * loss_gpu;
+    float * loss_gpu_temp; // u_net code
+    float * loss_gpu_temp1; // u_net code
     float * delta_gpu;
     float * cos_sim_gpu;
     float * rand_gpu;
@@ -873,6 +877,13 @@ typedef struct data {
     box **boxes;
 } data;
 
+//Unet code
+typedef struct path_labels{
+   char **random_paths;
+   char **random_labels;
+
+} path_labels;
+
 // data.h
 typedef enum {
     CLASSIFICATION_DATA, DETECTION_DATA, CAPTCHA_DATA, REGION_DATA, IMAGE_DATA, COMPARE_DATA, WRITING_DATA, SWAG_DATA, TAG_DATA, OLD_CLASSIFICATION_DATA, STUDY_DATA, DET_DATA, SUPER_DATA, LETTERBOX_DATA, REGRESSION_DATA, SEGMENTATION_DATA, INSTANCE_DATA, ISEG_DATA
@@ -954,7 +965,6 @@ typedef struct box_label {
 // parser.c
 LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API network *load_network_custom(char *cfg, char *weights, int clear, int batch);
-LIB_API network *load_network(char *cfg, char *weights, int clear);
 LIB_API void free_network(network net);
 
 // network.c
@@ -999,6 +1009,7 @@ LIB_API void copy_image_from_bytes(image im, char *pdata);
 LIB_API image letterbox_image(image im, int w, int h);
 LIB_API void rgbgr_image(image im);
 LIB_API image make_image(int w, int h, int c);
+LIB_API image mask_to_rgb(image mask);
 LIB_API image load_image_color(char *filename, int w, int h);
 LIB_API void free_image(image m);
 LIB_API image crop_image(image im, int dx, int dy, int w, int h);
@@ -1013,6 +1024,8 @@ LIB_API void free_data(data d);
 LIB_API pthread_t load_data(load_args args);
 LIB_API void free_load_threads(void *ptr);
 LIB_API pthread_t load_data_in_thread(load_args args);
+//Unet code
+LIB_API data load_data_unet(char **paths, int n, int m, char **labels, int w, int h);
 LIB_API void *load_thread(void *ptr);
 
 // dark_cuda.h
