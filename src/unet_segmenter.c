@@ -155,13 +155,9 @@ void predict_unet_segmenter()
                 printf ("%s\n", filename);
                 strncpy(input, filename, 256);
                 image im = load_image_color(input, 0, 0);
-                char* test = "1";
-                printf("Image LOADED\n");
                 float *X = (float *) im.data;
                 time = clock();
-                save_image_png(im, test);
-                float *predictions = network_predict(*net, X);
-                
+                float *predictions = network_predict(*net, X);              
                 image pred = get_network_image(*net);
                 image prmask = mask_to_rgb(pred);
 		        save_image_png(prmask, resfilename);

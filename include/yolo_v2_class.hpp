@@ -81,6 +81,7 @@ public:
 
     LIB_API std::vector<bbox_t> detect(std::string image_filename, float thresh = 0.2, bool use_mean = false);
     LIB_API std::vector<bbox_t> detect(image_t img, float thresh = 0.2, bool use_mean = false);
+    LIB_API image_t u_net_segment(image_t img);
     static LIB_API image_t load_image(std::string image_filename);
     static LIB_API void free_image(image_t m);
     LIB_API int get_net_width() const;
@@ -112,6 +113,30 @@ public:
             throw std::runtime_error("Image is empty");
         auto image_ptr = mat_to_image_resize(mat);
         return detect_resized(*image_ptr, mat.cols, mat.rows, thresh, use_mean);
+    }
+
+    cv::Mat u_net_segment(cv::Mat mat)
+    {
+      if (mat.data == NULL)
+        throw std::runtime_error("Image is empty");
+      auto image_ptr = mat_to_image_resize(mat);
+      auto ret = u_net_segment(*image_ptr);
+      cv::Mat retMat = cv::Mat::zeros(ret.h, ret.h, CV_8UC3);
+      for (int k = 0; k < ret.h; ++k) {
+        for (int j = 0; j < ret.w; ++j) {
+          cv::Vec3b& pixelColor = retMat.at<cv::Vec3b>(k, j);
+          pixelColor[0] = static_cast<uchar>(std::ceil(ret.data[0 * ret.w * ret.h + k * ret.w + j] * 255.0f));
+          pixelColor[1] = static_cast<uchar>(std::ceil(ret.data[1 * ret.w * ret.h + k * ret.w + j] * 255.0f));
+          pixelColor[2] = static_cast<uchar>(std::ceil(ret.data[2 * ret.w * ret.h + k * ret.w + j] * 255.0f));
+        }
+      }
+      free_image(ret);
+      cv::Mat det_mat;
+      if (mat.size() != retMat.size())
+        cv::resize(retMat, det_mat, mat.size());
+      else
+        det_mat = retMat;  // only reference is copied*/
+      return det_mat;
     }
 
     std::shared_ptr<image_t> mat_to_image_resize(cv::Mat mat) const

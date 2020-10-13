@@ -265,6 +265,55 @@ LIB_API void Detector::free_image(image_t m)
         free(m.data);
     }
 }
+LIB_API image_t Detector::u_net_segment(image_t img)
+{
+    detector_gpu_t &detector_gpu = *static_cast<detector_gpu_t *>(detector_gpu_ptr.get());
+    network &net = detector_gpu.net;
+#ifdef GPU
+    int old_gpu_index;
+    cudaGetDevice(&old_gpu_index);
+    if (cur_gpu_id != old_gpu_index)
+        cudaSetDevice(net.gpu_index);
+
+    net.wait_stream = wait_stream;    // 1 - wait CUDA-stream, 0 - not to wait
+#endif
+    //std::cout << "net.gpu_index = " << net.gpu_index << std::endl;
+
+    image im;
+    im.c = img.c;
+    im.data = img.data;
+    im.h = img.h;
+    im.w = img.w;
+
+    image sized;
+
+    if (net.w == im.w && net.h == im.h) {
+        sized = make_image(im.w, im.h, im.c);
+        memcpy(sized.data, im.data, im.w*im.h*im.c * sizeof(float));
+    }
+    else
+        sized = resize_image(im, net.w, net.h);
+
+
+    layer l = net.layers[net.n - 1];
+    float *X = sized.data;
+    float *prediction = network_predict(net, X);
+    image pred = get_network_image(net);
+    image prmask = mask_to_rgb(pred);
+    if (sized.data)
+        free(sized.data);
+    free(pred.data);
+#ifdef GPU
+    if (cur_gpu_id != old_gpu_index)
+        cudaSetDevice(old_gpu_index);
+#endif
+    image_t ret;
+    ret.c = prmask.c;
+    ret.data = prmask.data;
+    ret.h = prmask.h;
+    ret.w = prmask.w;
+    return ret;
+}
 
 LIB_API std::vector<bbox_t> Detector::detect(image_t img, float thresh, bool use_mean)
 {
