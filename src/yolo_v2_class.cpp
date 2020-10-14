@@ -302,7 +302,7 @@ LIB_API image_t Detector::u_net_segment(image_t img)
     image prmask = mask_to_rgb(pred);
     if (sized.data)
         free(sized.data);
-    free(pred.data);
+    //free(pred.data);
 #ifdef GPU
     if (cur_gpu_id != old_gpu_index)
         cudaSetDevice(old_gpu_index);
