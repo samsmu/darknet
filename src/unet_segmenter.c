@@ -7,12 +7,13 @@
 #include "dark_cuda.h"
 #ifdef WIN32
 #include <time.h>
+#include "dirent.h"
 #include "gettimeofday.h"
 #else
+#include <dirent.h>
 #include <sys/time.h>
 #endif
 #include <assert.h>
-#include "dirent.h"
 #include <string.h>
 void train_unet_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, int ngpus, int clear, int display)
 {
