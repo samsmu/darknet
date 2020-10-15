@@ -982,7 +982,8 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     float *avg_iou_per_class = (float*)xcalloc(classes, sizeof(float));
     int *tp_for_thresh_per_class = (int*)xcalloc(classes, sizeof(int));
     int *fp_for_thresh_per_class = (int*)xcalloc(classes, sizeof(int));
-
+    int* fp_index = (int*) calloc(m, sizeof(int));
+    int* fn_index = (int*) calloc(m, sizeof(int));
     for (t = 0; t < nthreads; ++t) {
         args.path = paths[i + t];
         args.im = &buf[t];
@@ -1003,6 +1004,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             args.resized = &buf_resized[t];
             thr[t] = load_data_in_thread(args);
         }
+        
         for (t = 0; t < nthreads && i + t - nthreads < m; ++t) {
             const int image_index = i + t - nthreads;
             char *path = paths[image_index];
@@ -1051,6 +1053,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             const int checkpoint_detections_count = detections_count;
 
             int i;
+            int trueBoxes = 0;
             for (i = 0; i < nboxes; ++i) {
 
                 int class_id;
@@ -1117,11 +1120,14 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
                             else{
                                 fp_for_thresh++;
                                 fp_for_thresh_per_class[class_id]++;
+                                fp_index[image_index] = 1;
                             }
+                            trueBoxes++;
                         }
                     }
                 }
             }
+            if (trueBoxes == 0 && num_labels > 0) fn_index[image_index] = 1;
 
             unique_truth_count += num_labels;
 
@@ -1140,7 +1146,6 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
             free_image(val_resized[t]);
         }
     }
-
     //for (t = 0; t < nthreads; ++t) {
     //    pthread_join(thr[t], 0);
     //}
@@ -1300,6 +1305,14 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     fprintf(reinforcement_fd,"for conf_thresh = %0.2f, TP = %d, FP = %d, FN = %d, average IoU = %2.2f %% \n",
         thresh_calc_avg_iou, tp_for_thresh, fp_for_thresh, unique_truth_count - tp_for_thresh, avg_iou * 100);
     mean_average_precision = mean_average_precision / classes;
+    for (i = 0; i < m; ++i) {
+        if (fp_index[i] == 1) fprintf(reinforcement_fd, "False positive image filename = %s\n", paths[i]);
+    }
+    free(fp_index);
+    for (i = 0; i < m; ++i) {
+        if (fn_index[i] == 1) fprintf(reinforcement_fd, "False negative image filename = %s\n", paths[i]);
+    }
+    free(fn_index);
     printf("\n IoU threshold = %2.0f %%, ", iou_thresh * 100);
     fprintf(reinforcement_fd,"IoU threshold = %2.0f %%, ", iou_thresh * 100);
     if (map_points) {
