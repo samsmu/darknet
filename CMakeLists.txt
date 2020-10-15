@@ -263,6 +263,7 @@ if(NOT MSVC)
   list(REMOVE_ITEM headers
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.h
     ${CMAKE_CURRENT_LIST_DIR}/src/getopt.h
+    ${CMAKE_CURRENT_LIST_DIR}/src/dirent.h
   )
 endif()
 #set(exported_headers ${headers})
@@ -283,6 +284,7 @@ if(NOT MSVC)
   list(REMOVE_ITEM sources
     ${CMAKE_CURRENT_LIST_DIR}/src/gettimeofday.c
     ${CMAKE_CURRENT_LIST_DIR}/src/getopt.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/dirent.c
   )
 endif()
 
