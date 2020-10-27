@@ -94,7 +94,7 @@ void train_unet_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *g
             image tr = float_to_image(net->w/div, net->h/div, 80, train.y.vals[net->batch*(net->subdivisions-1)]);
             image im = float_to_image(net->w, net->h, net->c, train.X.vals[net->batch*(net->subdivisions-1)]);
             image mask = mask_to_rgb(tr);
-            image prmask =mask_to_rgb(pred);
+            image prmask = mask_to_rgb(pred);
             show_image(im, "input");
             //show_image(prmask, "pred");
             //show_image(mask, "truth");
@@ -178,6 +178,113 @@ void predict_unet_segmenter()
     }   
 }
 
+void validate_unet_segmenter(char* datacfg, char* cfgfile, char* weightfile, int display)
+{
+    list* options = read_data_cfg(datacfg);
+    char* backup_directory = option_find_str(options, "backup", "/backup/");
+    char* valid_list = option_find_str(options, "valid", "data/unet/train.list");
+
+    list* plist = get_paths(valid_list);
+    char** paths = (char**)list_to_array(plist);
+    int N = plist->size;
+
+    char* valid_label_list = option_find_str(options, "label_valid", "data/unet/labels.list");
+
+    list* pplist = get_paths(valid_label_list);
+    char** labels = (char**)list_to_array(pplist);
+    FILE* reinforcement_fd = NULL;
+    reinforcement_fd = fopen("reportSegmenter.txt", "w");
+    network* net = load_network(cfgfile, weightfile, 0);
+    set_batch_network(net, 1);
+    float avgIoU = 0.0f;
+    float avgPixelAccuracy = 0.0f;
+    const float treshold = 0.3f;
+    const float minSquare = 10.0f;
+    int correctIoU = 0;
+    int i, j;
+    for (i = 0; i < N; ++i) {
+        clock_t time;
+        image im = load_image_color(paths[i], 0, 0);
+        float* X = (float*)im.data;
+        time = clock();
+        float* predictions = network_predict(*net, X);
+        image pred = get_network_image(*net);
+        image thresholdIm = threshold_image(pred, treshold);
+        printf("%s: Predicted in %f seconds.", paths[i], sec(clock() - time));
+        fprintf(reinforcement_fd, "%s: Predicted in %f seconds.", paths[i], sec(clock() - time));
+        image label = load_image(labels[i], 0, 0, 1);
+        float labelSum = 0.0f;
+        for (j = 0; j < label.h * label.w; ++j) {
+            labelSum += label.data[j];
+        }
+        float TP = 0.0f;
+        float TN = 0.0f;
+        float FP = 0.0f;
+        float FN = 0.0f;
+        for (j = 0; j < pred.h * pred.w; ++j) {
+            if (pred.data[j] > treshold) {
+                if (label.data[j] > treshold) {
+                    TP += 1.0f;
+                }
+                else {
+                    FP += 1.0f;
+                }
+            }
+            else {
+                if (label.data[j] > treshold) {
+                    FN += 1.0f;
+                }
+                else {
+                    TN += 1.0f;
+                }
+            }
+        }
+        float pixelAccuracy = (TP + TN) / (TP + TN + FP + FN);
+        avgPixelAccuracy += pixelAccuracy;
+        printf(" PixelAccuracy = %f", pixelAccuracy);
+        fprintf(reinforcement_fd, " PixelAccuracy = %f", pixelAccuracy);
+        image inter = image_intersection(thresholdIm, label);
+        float suminter = 0.0f;
+        for (j = 0; j < inter.h * inter.w; ++j) {
+            if (inter.data[j] > treshold) suminter += 1.0f;
+        }
+
+        image un = image_union(thresholdIm, label);
+        float sumun = 0.0f;
+        for (j = 0; j < un.h * un.w; ++j) {
+            if (un.data[j] > treshold) sumun += 1.0f;
+        }
+
+        if (sumun > minSquare || labelSum > minSquare) {
+            correctIoU++;
+            printf(" IoU = %f", suminter / sumun);
+            fprintf(reinforcement_fd, " IoU = %f", suminter / sumun);
+            avgIoU += (suminter / sumun);
+        }
+        if (display) {
+            show_image(im, "source");
+            show_image(thresholdIm, "predict");
+            image dist = image_distance(thresholdIm, label);
+            show_image(label, "label");
+            show_image(dist, "dist");
+#ifdef OPENCV
+            cvWaitKey(100000);
+#endif
+            free_image(dist);
+        }
+        free_image(im);
+        free_image(thresholdIm);
+        free_image(label);
+        free_image(inter);
+        free_image(un);
+        printf("\n");
+        fprintf(reinforcement_fd, "\n");
+    }
+    printf("avgPixelAccuracy = %f avgIoU = %f\n", avgPixelAccuracy / (float)N, avgIoU / (float) correctIoU);
+    fprintf(reinforcement_fd, "avgPixelAccuracy = %f avgIoU = %f\n", avgPixelAccuracy / (float)N, avgIoU / (float)correctIoU);
+    if (reinforcement_fd != NULL) fclose(reinforcement_fd);
+}
+
 void run_unet_segmenter(int argc, char **argv)
 {
     if(argc < 2){
@@ -215,8 +322,9 @@ void run_unet_segmenter(int argc, char **argv)
     char *cfg = argv[4];
     char *weights = (argc > 5) ? argv[5] : 0;
     char *filename = (argc > 6) ? argv[6]: 0;
-    if(0==strcmp(argv[2], "test")) predict_unet_segmenter();
-    else if(0==strcmp(argv[2], "train")) train_unet_segmenter(data, cfg, weights, gpus, ngpus, clear, display);
+    if (0==strcmp(argv[2], "test")) predict_unet_segmenter();
+    else if (0==strcmp(argv[2], "train")) train_unet_segmenter(data, cfg, weights, gpus, ngpus, clear, display);
+    else if (0 == strcmp(argv[2], "valid")) validate_unet_segmenter(data, cfg, weights, display);
 }
 
 

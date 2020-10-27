@@ -607,6 +607,28 @@ image image_distance(image a, image b)
     return dist;
 }
 
+image image_intersection(image a, image b)
+{
+    int j;
+    image intersection_img = make_image(a.w, a.h, 1);
+    for (j = 0; j < a.h * a.w; ++j) {
+        intersection_img.data[j] = a.data[j] * b.data[j];
+        if (intersection_img.data[j] > 1.0f) intersection_img.data[j] = 1.0f;
+    }
+    return intersection_img;
+}
+
+image image_union(image a, image b)
+{
+    int j;
+    image union_img = make_image(a.w, a.h, 1);
+    for (j = 0; j < a.h * a.w; ++j) {
+        union_img.data[j] = a.data[j] + b.data[j];
+        if (union_img.data[j] > 1.0f) union_img.data[j] = 1.0f;
+    }
+    return union_img;
+}
+
 void embed_image(image source, image dest, int dx, int dy)
 {
     int x,y,k;

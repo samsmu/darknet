@@ -1278,8 +1278,8 @@ __global__ void logistic_x_ent_kernel(int n, float *pred, float *truth, float *d
 
 extern "C" void logistic_x_ent_gpu(int n, float *pred, float *truth, float *delta, float *error)
 {
-    logistic_x_ent_kernel << <cuda_gridsize(n), BLOCK >> > (n, pred, truth, delta, error);
-    check_error(cudaPeekAtLastError());
+    logistic_x_ent_kernel << <cuda_gridsize(n), BLOCK, 0, get_cuda_stream() >> > (n, pred, truth, delta, error);
+    CHECK_CUDA(cudaPeekAtLastError());
 }
 
 __global__ void l2_kernel(int n, float *pred, float *truth, float *delta, float *error)

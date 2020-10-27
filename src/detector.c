@@ -904,7 +904,7 @@ float validate_detector_map(char *datacfg, char *cfgfile, char *weightfile, floa
     //int *map = 0;
     //if (mapf) map = read_map(mapf);
     FILE* reinforcement_fd = NULL;
-    reinforcement_fd = fopen ("report.txt","w");
+    reinforcement_fd = fopen ("reportDetector.txt","w");
     network net;
     //int initial_batch;
     if (existing_net) {
