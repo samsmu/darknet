@@ -1,0 +1,6 @@
+train  = data/unet/train.list
+label = data/unet/labels.list
+valid  = data/unet/valid.list
+label_valid = data/unet/label_valid.list
+backup = backup
+top=2
