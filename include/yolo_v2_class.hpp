@@ -54,7 +54,6 @@ struct bbox_t_container {
 #include <opencv2/opencv.hpp>            // C++
 #include <opencv2/highgui/highgui_c.h>   // C
 #include <opencv2/imgproc/imgproc_c.h>   // C
-#include <image_opencv.h>
 #endif
 
 extern "C" LIB_API int init(const char *configurationFilename, const char *weightsFilename, int gpu);

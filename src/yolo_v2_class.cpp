@@ -14,6 +14,9 @@ extern "C" {
 #include "demo.h"
 #include "option_list.h"
 #include "stb_image.h"
+#ifdef OPENCV
+#include "image_opencv.h"
+#endif
 }
 //#include <sys/time.h>
 
