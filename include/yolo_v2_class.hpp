@@ -54,6 +54,7 @@ struct bbox_t_container {
 #include <opencv2/opencv.hpp>            // C++
 #include <opencv2/highgui/highgui_c.h>   // C
 #include <opencv2/imgproc/imgproc_c.h>   // C
+#include <image_opencv.h>
 #endif
 
 extern "C" LIB_API int init(const char *configurationFilename, const char *weightsFilename, int gpu);
@@ -66,6 +67,10 @@ extern "C" LIB_API bool built_with_cuda();
 extern "C" LIB_API bool built_with_cudnn();
 extern "C" LIB_API bool built_with_opencv();
 extern "C" LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
+
+#ifdef OPENCV
+void predict_classifier(char* datacfg, char* cfgfile, char* weightfile, cv::Mat& mat, int top);
+#endif
 
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;

@@ -26,6 +26,70 @@ extern "C" {
 
 //static Detector* detector = NULL;
 static std::unique_ptr<Detector> detector;
+#ifdef OPENCV
+void predict_classifier(char* datacfg, char* cfgfile, char* weightfile, cv::Mat& mat, int top)
+{
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);
+    if (weightfile) {
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    srand(2222222);
+
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
+
+    list* options = read_data_cfg(datacfg);
+
+    char* name_list = option_find_str(options, "names", 0);
+    if (!name_list) name_list = option_find_str(options, "labels", "data/labels.list");
+    int classes = option_find_int(options, "classes", 2);
+    printf(" classes = %d, output in cfg = %d \n", classes, net.layers[net.n - 1].c);
+    layer l = net.layers[net.n - 1];
+    if (classes != l.outputs && (l.type == SOFTMAX || l.type == COST)) {
+        printf("\n Error: num of filters = %d in the last conv-layer in cfg-file doesn't match to classes = %d in data-file \n",
+            l.outputs, classes);
+        getchar();
+    }
+    if (top == 0) top = option_find_int(options, "top", 1);
+    if (top > classes) top = classes;
+
+    int i = 0;
+    char** names = get_labels(name_list);
+    clock_t time;
+    int* indexes = (int*)xcalloc(top, sizeof(int));
+    char buff[256];
+    char* input = buff;
+    //int size = net.w;
+    {
+        auto im = mat_to_image_cv((mat_cv*) &mat);
+        image resized = resize_min(im, net.w);
+        image r = crop_image(resized, (resized.w - net.w) / 2, (resized.h - net.h) / 2, net.w, net.h);
+        //image r = resize_min(im, size);
+        //resize_network(&net, r.w, r.h);
+        float* X = r.data;
+
+        double time = get_time_point();
+        float* predictions = network_predict(net, X);
+
+        if (net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 0);
+        top_k(predictions, net.outputs, top, indexes);
+
+        for (i = 0; i < top; ++i) {
+            int index = indexes[i];
+            if (net.hierarchy) printf("%d, %s: %f, parent: %s \n", index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");
+            else printf("%s: %f\n", names[index], predictions[index]);
+        }
+        if (r.data != im.data) free_image(r);
+        free_image(im);
+        free_image(resized);
+    }
+    free(indexes);
+    free_network(net);
+    free_list_contents_kvp(options);
+    free_list(options);
+}
+#endif
 
 int init(const char *configurationFilename, const char *weightsFilename, int gpu)
 {
