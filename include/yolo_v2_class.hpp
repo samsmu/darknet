@@ -68,7 +68,7 @@ extern "C" LIB_API bool built_with_opencv();
 extern "C" LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
 
 #ifdef OPENCV
-extern "C" LIB_API int predict_classifier(char* cfgfile, char* weightfile, cv::Mat& mat);
+extern "C" LIB_API int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat);
 #endif
 
 class Detector {

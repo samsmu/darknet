@@ -30,7 +30,7 @@ extern "C" {
 //static Detector* detector = NULL;
 static std::unique_ptr<Detector> detector;
 #ifdef OPENCV
-int predict_classifier(char* cfgfile, char* weightfile, cv::Mat& mat)
+int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat)
 {
     network net = parse_network_cfg_custom(cfgfile, 1, 0);
     if (weightfile) {
