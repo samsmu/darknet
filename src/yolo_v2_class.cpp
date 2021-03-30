@@ -32,7 +32,6 @@ static std::unique_ptr<Detector> detector;
 #ifdef OPENCV
 int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat)
 {
-	int a;
     network net = parse_network_cfg_custom(cfgfile, 1, 0);
     if (weightfile) {
         load_weights(&net, weightfile);
@@ -43,36 +42,25 @@ int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat)
     calculate_binary_weights(net);
     layer l = net.layers[net.n - 1];
     int classes = l.outputs;
-	std::cout << classes << std::endl;
-	std::cin >> a;
-	auto im = mat_to_image_cv((mat_cv*) &mat);
-	std::cout << "1" << std::endl;
-	std::cin >> a;
-	image resized = resize_min(im, net.w);
-	std::cout << "2" << std::endl;
-	std::cin >> a;
-	image r = crop_image(resized, (resized.w - net.w) / 2, (resized.h - net.h) / 2, net.w, net.h);
-	std::cout << "3" << std::endl;
-	std::cin >> a;
-	float* X = r.data;
-	float* predictions = network_predict(net, X);
-	std::cout << "4" << std::endl;
-	std::cin >> a;
-	//if (net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 0);
-	float max = 0.0f;
-	int retValue = 0;
-	for (int i = 0; i < classes; ++i) {
-		if (predictions[i] > max) {
-			max = predictions[i];
-			retValue = i;
-		}
-		printf("%d: %f\n", i, predictions[i]);
-	}
-	if (r.data != im.data) free_image(r);
-	free_image(im);
-	free_image(resized);
+    auto im = mat_to_image_cv((mat_cv*) &mat);
+    image resized = resize_min(im, net.w);
+    image r = crop_image(resized, (resized.w - net.w) / 2, (resized.h - net.h) / 2, net.w, net.h);
+    float* X = r.data;
+    float* predictions = network_predict(net, X);
+    float max = 0.0f;
+    int retValue = 0;
+    for (int i = 0; i < classes; ++i) {
+        if (predictions[i] > max) {
+            max = predictions[i];
+            retValue = i;
+        }
+        //printf("%d: %f\n", i, predictions[i]);
+    }
+    if (r.data != im.data) free_image(r);
+    free_image(im);
+    free_image(resized);
     free_network(net);
-	return retValue;
+    return retValue;
 }
 #endif
 
