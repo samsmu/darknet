@@ -32,6 +32,7 @@ static std::unique_ptr<Detector> detector;
 #ifdef OPENCV
 int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat)
 {
+	int a;
     network net = parse_network_cfg_custom(cfgfile, 1, 0);
     if (weightfile) {
         load_weights(&net, weightfile);
@@ -42,6 +43,8 @@ int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat)
     calculate_binary_weights(net);
     layer l = net.layers[net.n - 1];
     int classes = l.outputs;
+	std::cout << classes << std::endl;
+	std::cin >> a;
 	auto im = mat_to_image_cv((mat_cv*) &mat);
 	image resized = resize_min(im, net.w);
 	image r = crop_image(resized, (resized.w - net.w) / 2, (resized.h - net.h) / 2, net.w, net.h);
