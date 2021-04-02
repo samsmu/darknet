@@ -67,6 +67,10 @@ extern "C" LIB_API bool built_with_cudnn();
 extern "C" LIB_API bool built_with_opencv();
 extern "C" LIB_API void send_json_custom(char const* send_buf, int port, int timeout);
 
+#ifdef OPENCV
+extern "C" LIB_API int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat);
+#endif
+
 class Detector {
     std::shared_ptr<void> detector_gpu_ptr;
     std::deque<std::vector<bbox_t>> prev_bbox_vec_deque;

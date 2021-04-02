@@ -14,6 +14,9 @@ extern "C" {
 #include "demo.h"
 #include "option_list.h"
 #include "stb_image.h"
+#ifdef OPENCV
+#include "image_opencv.h"
+#endif
 }
 //#include <sys/time.h>
 
@@ -26,6 +29,40 @@ extern "C" {
 
 //static Detector* detector = NULL;
 static std::unique_ptr<Detector> detector;
+#ifdef OPENCV
+int predict_classifier_acr(char* cfgfile, char* weightfile, cv::Mat& mat)
+{
+    network net = parse_network_cfg_custom(cfgfile, 1, 0);
+    if (weightfile) {
+        load_weights(&net, weightfile);
+    }
+    set_batch_network(&net, 1);
+    srand(2222222);
+    fuse_conv_batchnorm(net);
+    calculate_binary_weights(net);
+    layer l = net.layers[net.n - 1];
+    int classes = l.outputs;
+    auto im = mat_to_image_cv((mat_cv*) &mat);
+    image resized = resize_min(im, net.w);
+    image r = crop_image(resized, (resized.w - net.w) / 2, (resized.h - net.h) / 2, net.w, net.h);
+    float* X = r.data;
+    float* predictions = network_predict(net, X);
+    float max = 0.0f;
+    int retValue = 0;
+    for (int i = 0; i < classes; ++i) {
+        if (predictions[i] > max) {
+            max = predictions[i];
+            retValue = i;
+        }
+        //printf("%d: %f\n", i, predictions[i]);
+    }
+    if (r.data != im.data) free_image(r);
+    free_image(im);
+    free_image(resized);
+    free_network(net);
+    return retValue;
+}
+#endif
 
 int init(const char *configurationFilename, const char *weightsFilename, int gpu)
 {
